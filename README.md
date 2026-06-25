@@ -67,11 +67,7 @@ The AI analyzes it and provides:
 
 ## Technologies Used
 
-* React
-* TypeScript
-* Node.js
-* HTML
-* CSS
+* ChatGPT
 * Replit AI
 
 ---

@@ -1,0 +1,214 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: LinkGuard API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: analyze
+    description: Link and message analysis
+  - name: stats
+    description: Dashboard statistics
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /analyze:
+    post:
+      operationId: analyzeContent
+      tags: [analyze]
+      summary: Analyze a URL or message for threats
+      description: Performs phishing, scam, and malware analysis on a URL or text message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeInput"
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get dashboard statistics
+      description: Returns aggregated statistics for the dashboard
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    AnalyzeInput:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: URL or message text to analyze
+
+    ThreatIndicator:
+      type: object
+      required:
+        - category
+        - description
+        - severity
+      properties:
+        category:
+          type: string
+          description: Category of threat indicator (e.g. "domain", "content", "pattern")
+        description:
+          type: string
+          description: Human-readable description of the indicator
+        severity:
+          type: string
+          enum: [low, medium, high]
+          description: Severity level of this indicator
+
+    AnalysisResult:
+      type: object
+      required:
+        - score
+        - verdict
+        - indicators
+        - tips
+        - analyzedAt
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Risk score from 0 (safe) to 100 (dangerous)
+        verdict:
+          type: string
+          enum: [safe, suspicious, dangerous]
+          description: Overall verdict based on score
+        indicators:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThreatIndicator"
+          description: List of threat indicators found
+        tips:
+          type: array
+          items:
+            type: string
+          description: Cybersecurity awareness tips relevant to the analysis
+        analyzedAt:
+          type: string
+          description: ISO timestamp of analysis
+
+    DashboardStats:
+      type: object
+      required:
+        - totalAnalyzed
+        - safeCount
+        - suspiciousCount
+        - dangerousCount
+        - topThreats
+        - recentActivity
+      properties:
+        totalAnalyzed:
+          type: integer
+          description: Total number of analyses performed
+        safeCount:
+          type: integer
+          description: Number of safe results
+        suspiciousCount:
+          type: integer
+          description: Number of suspicious results
+        dangerousCount:
+          type: integer
+          description: Number of dangerous results
+        topThreats:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThreatStat"
+          description: Most common threat categories
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentScan"
+          description: Recent scan activity (last 10, no stored content)
+
+    ThreatStat:
+      type: object
+      required:
+        - category
+        - count
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+
+    RecentScan:
+      type: object
+      required:
+        - verdict
+        - score
+        - scannedAt
+      properties:
+        verdict:
+          type: string
+          enum: [safe, suspicious, dangerous]
+        score:
+          type: integer
+        scannedAt:
+          type: string
+
+    ApiError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
